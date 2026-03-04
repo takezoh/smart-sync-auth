@@ -1,6 +1,6 @@
 # obsidian-smart-sync-oauth-relay
 
-A static OAuth redirect page for [Smart Sync for Obsidian](https://github.com/takezoh/obsidian-smart-sync). Hosted on GitHub Pages, it relays Google OAuth callbacks to the `obsidian://` URI scheme so the plugin can receive authorization codes automatically.
+A static OAuth redirect page for [Smart Sync for Obsidian](https://github.com/takezoh/obsidian-smart-sync). Google OAuth does not allow custom URI schemes like `obsidian://` as redirect URIs for Web application clients. This GitHub Pages site acts as an intermediary — it receives the Google OAuth callback over HTTPS, then redirects to the `obsidian://` URI scheme so the plugin can receive authorization codes automatically.
 
 ## How It Works
 
@@ -9,7 +9,7 @@ A static OAuth redirect page for [Smart Sync for Obsidian](https://github.com/ta
 3. The static page immediately redirects to `obsidian://smart-sync-auth?code=xxx&state=yyy`.
 4. The OS opens Obsidian, the plugin receives the callback, and completes the token exchange.
 
-If the automatic redirect does not work (e.g. the browser blocks custom URI schemes), the page displays a manual "Open Obsidian" button as a fallback.
+If the automatic redirect does not work (e.g. the browser blocks custom URI schemes), the page displays a manual "Open Obsidian" button. Users can click this button to trigger the `obsidian://` redirect manually. If the button also fails, users can copy the full redirect URL and paste it into the plugin's **Authorization code** field in settings.
 
 ## Security
 
