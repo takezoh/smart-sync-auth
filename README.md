@@ -5,7 +5,7 @@ A static OAuth redirect page for [Smart Sync for Obsidian](https://github.com/ta
 ## How It Works
 
 1. The plugin opens the Google OAuth consent screen with `redirect_uri` pointing to this site.
-2. After the user authorizes, Google redirects to `https://smartsync.takezoh.dev/callback/?code=xxx&state=yyy`.
+2. After the user authorizes, Google redirects to `https://smartsync.takezo.dev/callback/?code=xxx&state=yyy`.
 3. The static page immediately redirects to `obsidian://smart-sync-auth?code=xxx&state=yyy`.
 4. The OS opens Obsidian, the plugin receives the callback, and completes the token exchange.
 
