@@ -31,12 +31,12 @@ export default {
     const url = new URL(request.url);
     const path = url.pathname;
 
-    if (path === '/callback' && request.method === 'GET') {
+    if (path === '/google/callback' && request.method === 'GET') {
       const res = await handleCallback(request, env);
       return withHeaders(res);
     }
 
-    if (path === '/token/refresh') {
+    if (path === '/google/token/refresh') {
       if (request.method === 'OPTIONS') {
         return withHeaders(new Response(null, { status: 204 }), CORS_HEADERS);
       }
