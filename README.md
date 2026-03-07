@@ -12,7 +12,7 @@ Google OAuth requires redirect URIs to use `https://` — custom schemes like `o
                             [obsidian://smart-sync-auth?access_token=...&refresh_token=...]
 ```
 
-For technical details on the authentication flow, see the [plugin architecture documentation](https://github.com/takezoh/obsidian-smart-sync/blob/main/docs/architecture.md).
+For technical details on the authentication flow, see the [plugin architecture documentation](https://github.com/takezoh/obsidian-smart-sync/blob/main/ARCHITECTURE.md).
 
 ## Endpoints
 
