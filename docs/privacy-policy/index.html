@@ -38,10 +38,10 @@
   <p><strong>We do not collect, transmit, or store any of your personal data on our servers.</strong></p>
   <p>Smart Sync operates locally on your device. The only network communication the plugin performs is directly between your device and Google's APIs. Specifically:</p>
   <ul>
-    <li><strong>Google account information:</strong> When you authorize the plugin, Google provides an OAuth 2.0 authorization code, which the plugin exchanges for access and refresh tokens. These tokens are stored locally on your device within Obsidian's settings storage.</li>
+    <li><strong>Google account information:</strong> When you authorize the plugin, Google provides an OAuth 2.0 authorization code. The OAuth relay server exchanges this code for access and refresh tokens, which are then passed directly to the plugin and stored locally on your device within Obsidian's settings storage.</li>
     <li><strong>Google Drive file data:</strong> The plugin reads and writes files in a single designated folder in your Google Drive to perform synchronization. File content is transferred directly between your device and Google Drive over HTTPS.</li>
   </ul>
-  <p>We do not operate any backend servers that process or relay your data. The OAuth redirect page (<code>smartsync.takezo.dev</code>) is a static HTML page hosted on GitHub Pages. It only passes the temporary OAuth authorization code and state parameter back to Obsidian via a custom URI scheme. It does not log, store, or transmit any data.</p>
+  <p>We operate a lightweight OAuth relay server (<code>auth-smartsync.takezo.dev</code>) hosted on Cloudflare Workers. This server performs the OAuth token exchange on your behalf — it receives a temporary authorization code from Google, exchanges it for access and refresh tokens using the securely stored client secret, and immediately passes those tokens to Obsidian via a custom URI scheme redirect. The server does not log, store, or persist any tokens or user data. All processing is transient and stateless.</p>
 
   <h2>3. How your information is used</h2>
   <p>All data processing occurs locally on your device. The plugin uses your Google Drive access to:</p>
@@ -87,7 +87,8 @@
     <li>OAuth 2.0 with PKCE (Proof Key for Code Exchange) for secure authentication</li>
     <li>All communication with Google APIs is over HTTPS</li>
     <li>Access tokens are short-lived and automatically refreshed</li>
-    <li>No credentials or tokens are transmitted to any server other than Google's OAuth endpoints</li>
+    <li>The OAuth relay server (Cloudflare Workers) processes tokens transiently and does not log or persist any data</li>
+    <li>No credentials or tokens are stored on any server other than your local device</li>
   </ul>
 
   <h2>9. Children's privacy</h2>
