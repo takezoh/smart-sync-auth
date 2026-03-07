@@ -23,7 +23,8 @@ const baseStyle = `
   .fallback { margin-top: 32px; font-size: 0.85rem; color: #666; }
 `;
 
-export function redirectPage(obsidianUri: string): string {
+export function redirectPage(callbackUri: string, appName: string): string {
+  const safeAppName = escapeHtml(appName);
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -34,13 +35,13 @@ export function redirectPage(obsidianUri: string): string {
   <style>${baseStyle}</style>
 </head>
 <body>
-  <h1>Smart Sync for Obsidian</h1>
-  <p class="message">Redirecting to Obsidian&hellip;</p>
+  <h1>Smart Sync</h1>
+  <p class="message">Redirecting to ${safeAppName}&hellip;</p>
   <div class="fallback">
     <p>If it doesn't open automatically, click the button below.</p>
-    <a href="${escapeHtml(obsidianUri)}">Open Obsidian</a>
+    <a href="${escapeHtml(callbackUri)}">Open ${safeAppName}</a>
   </div>
-  <script>window.location.href = ${JSON.stringify(obsidianUri)};</script>
+  <script>window.location.href = ${JSON.stringify(callbackUri)};</script>
 </body>
 </html>`;
 }
@@ -56,8 +57,8 @@ export function errorPage(message: string): string {
   <style>${baseStyle}</style>
 </head>
 <body>
-  <h1>Smart Sync for Obsidian</h1>
-  <p class="message error">${escapeHtml(message)}<br>Please try signing in again from Obsidian.</p>
+  <h1>Smart Sync</h1>
+  <p class="message error">${escapeHtml(message)}<br>Please try signing in again from your app.</p>
 </body>
 </html>`;
 }

@@ -3,11 +3,28 @@ import { redirectPage, errorPage } from './html';
 
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 
+interface AppConfig {
+  redirectBase: string;
+  displayName: string;
+}
+
+const ALLOWED_APPS: Record<string, AppConfig> = {
+  'obsidian-plugin': {
+    redirectBase: 'obsidian://smart-sync-auth',
+    displayName: 'Obsidian',
+  },
+};
+
 interface TokenResponse {
   access_token: string;
   refresh_token?: string;
   expires_in: number;
   token_type: string;
+}
+
+interface StatePayload {
+  app: string;
+  nonce: string;
 }
 
 function htmlResponse(body: string, status = 200): Response {
@@ -17,13 +34,35 @@ function htmlResponse(body: string, status = 200): Response {
   });
 }
 
+function parseState(raw: string): StatePayload | null {
+  try {
+    const json = JSON.parse(atob(raw));
+    if (typeof json.app === 'string' && typeof json.nonce === 'string') {
+      return json as StatePayload;
+    }
+  } catch {
+    // invalid base64 or JSON
+  }
+  return null;
+}
+
 export async function handleCallback(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
   const code = url.searchParams.get('code');
-  const state = url.searchParams.get('state');
+  const stateRaw = url.searchParams.get('state');
 
-  if (!code || !state) {
+  if (!code || !stateRaw) {
     return htmlResponse(errorPage('Missing authentication parameters.'), 400);
+  }
+
+  const state = parseState(stateRaw);
+  if (!state) {
+    return htmlResponse(errorPage('Invalid state parameter.'), 400);
+  }
+
+  const appConfig = ALLOWED_APPS[state.app];
+  if (!appConfig) {
+    return htmlResponse(errorPage('Unknown app.'), 400);
   }
 
   const tokenParams = new URLSearchParams({
@@ -46,18 +85,18 @@ export async function handleCallback(request: Request, env: Env): Promise<Respon
 
   const tokens: TokenResponse = await tokenRes.json();
 
-  const obsidianParams = new URLSearchParams({
+  const callbackParams = new URLSearchParams({
     access_token: tokens.access_token,
     expires_in: String(tokens.expires_in),
-    state,
+    state: stateRaw,
   });
   if (tokens.refresh_token) {
-    obsidianParams.set('refresh_token', tokens.refresh_token);
+    callbackParams.set('refresh_token', tokens.refresh_token);
   }
 
-  const obsidianUri = `obsidian://smart-sync-auth?${obsidianParams.toString()}`;
+  const callbackUri = `${appConfig.redirectBase}?${callbackParams.toString()}`;
 
-  return htmlResponse(redirectPage(obsidianUri));
+  return htmlResponse(redirectPage(callbackUri, appConfig.displayName));
 }
 
 export async function handleTokenRefresh(request: Request, env: Env): Promise<Response> {
