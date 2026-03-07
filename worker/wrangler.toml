@@ -1,4 +1,4 @@
-name = "smart-sync-oauth-relay"
+name = "smart-sync-auth"
 main = "src/index.ts"
 compatibility_date = "2024-12-01"
 routes = [

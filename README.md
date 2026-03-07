@@ -1,4 +1,4 @@
-# obsidian-smart-sync-oauth-relay
+# smart-sync-auth
 
 OAuth relay server for [Smart Sync for Obsidian](https://github.com/takezoh/obsidian-smart-sync). Performs server-side Google OAuth token exchange so the Client Secret stays off the client.
 
