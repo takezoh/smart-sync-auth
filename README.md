@@ -19,6 +19,14 @@ Google OAuth requires redirect URIs to use `https://` — custom schemes like `o
 | GET | `/google/callback` | Google OAuth redirect → token exchange → `obsidian://` redirect |
 | POST | `/google/token/refresh` | Refresh token → new access token (JSON) |
 
+## `docs/callback/`
+
+Custom OAuth redirect page for users who bring their own Google OAuth credentials. Hosted on GitHub Pages at `smartsync.takezo.dev/callback/`.
+
+When a custom OAuth user completes Google sign-in, Google redirects to this page with `?code=...&state=...`. The page then redirects to `obsidian://smart-sync-auth?code=...&state=...` so the plugin can exchange the code for tokens directly (with PKCE), without going through the auth server.
+
+Unlike the built-in flow (`/google/callback` on the Worker), no server-side token exchange happens — the authorization code is passed through as-is.
+
 ## Infrastructure
 
 | Domain | Host | Purpose |
