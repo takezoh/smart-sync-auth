@@ -36,28 +36,51 @@
 
   <script>
     (function () {
+      var ALLOWED_APPS = {
+        "obsidian-plugin": {
+          redirectBase: "obsidian://smart-sync-auth",
+          displayName: "Obsidian"
+        }
+      };
+
       var params = new URLSearchParams(window.location.search);
       var code = params.get("code");
-      var state = params.get("state");
+      var stateRaw = params.get("state");
       var content = document.getElementById("content");
 
-      if (!code || !state) {
-        content.innerHTML =
-          '<p class="message error">Missing authentication parameters.<br>Please try signing in again from Obsidian.</p>';
+      function showError(msg) {
+        content.innerHTML = '<p class="message error">' + msg + "</p>";
+      }
+
+      if (!code || !stateRaw) {
+        showError("Missing authentication parameters.<br>Please try signing in again from Obsidian.");
+        return;
+      }
+
+      var state;
+      try {
+        state = JSON.parse(atob(stateRaw));
+      } catch (e) {
+        showError("Invalid state parameter.");
+        return;
+      }
+
+      var appConfig = ALLOWED_APPS[state.app];
+      if (!appConfig) {
+        showError("Unknown app.");
         return;
       }
 
       var redirectUri =
-        "obsidian://smart-sync-auth?code=" +
-        encodeURIComponent(code) +
-        "&state=" +
-        encodeURIComponent(state);
+        appConfig.redirectBase +
+        "?code=" + encodeURIComponent(code) +
+        "&state=" + encodeURIComponent(stateRaw);
 
       content.innerHTML =
-        '<p class="message">Redirecting to Obsidian…</p>' +
+        '<p class="message">Redirecting to ' + appConfig.displayName + '…</p>' +
         '<div class="fallback">' +
         "<p>If it doesn't open automatically, click the button below.</p>" +
-        '<a href="' + redirectUri + '">Open Obsidian</a>' +
+        '<a href="' + redirectUri + '">Open ' + appConfig.displayName + "</a>" +
         "</div>";
 
       window.location.href = redirectUri;
