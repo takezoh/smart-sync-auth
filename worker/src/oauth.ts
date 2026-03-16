@@ -80,7 +80,11 @@ export async function handleCallback(request: Request, env: Env): Promise<Respon
   });
 
   if (!tokenRes.ok) {
-    return htmlResponse(errorPage(`Token exchange failed (${tokenRes.status}).`), 502);
+    const errorBody = await tokenRes.text();
+    const detail = tokenRes.status >= 500
+      ? `Google server error (${tokenRes.status})`
+      : `Token exchange failed (${tokenRes.status})`;
+    return htmlResponse(errorPage(detail), tokenRes.status >= 500 ? 502 : 400);
   }
 
   const tokens: TokenResponse = await tokenRes.json();
@@ -125,10 +129,12 @@ export async function handleTokenRefresh(request: Request, env: Env): Promise<Re
   });
 
   if (!tokenRes.ok) {
-    return Response.json(
-      { error: `Token refresh failed (${tokenRes.status})` },
-      { status: 502 },
-    );
+    const errorBody = await tokenRes.text();
+    const status = tokenRes.status >= 500 ? 502 : tokenRes.status;
+    return new Response(errorBody, {
+      status,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 
   const tokens: TokenResponse = await tokenRes.json();
