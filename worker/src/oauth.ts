@@ -139,8 +139,12 @@ export async function handleTokenRefresh(request: Request, env: Env): Promise<Re
 
   const tokens: TokenResponse = await tokenRes.json();
 
-  return Response.json({
+  const result: Record<string, unknown> = {
     access_token: tokens.access_token,
     expires_in: tokens.expires_in,
-  });
+  };
+  if (tokens.refresh_token) {
+    result.refresh_token = tokens.refresh_token;
+  }
+  return Response.json(result);
 }
