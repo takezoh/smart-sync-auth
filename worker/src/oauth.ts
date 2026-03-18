@@ -10,7 +10,7 @@ interface AppConfig {
 
 const ALLOWED_APPS: Record<string, AppConfig> = {
   'obsidian-plugin': {
-    redirectBase: 'obsidian://smart-sync-auth',
+    redirectBase: 'obsidian://air-sync-auth',
     displayName: 'Obsidian',
   },
 };
