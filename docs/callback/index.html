@@ -95,7 +95,6 @@
           !state ||
           typeof state !== "object" ||
           Array.isArray(state) ||
-          typeof state.app !== "string" ||
           typeof state.nonce !== "string"
         ) {
           showError("Invalid state parameter.");
