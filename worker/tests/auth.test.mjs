@@ -6,6 +6,7 @@ import vm from 'node:vm';
 import {
   handleCallback,
   handleTokenRefresh,
+  parseState,
   projectAuthorizationError,
 } from '../.test-dist/oauth.mjs';
 import { handlePCloudCallback } from '../.test-dist/pcloud.mjs';
@@ -19,6 +20,16 @@ const env = {
 };
 const state = Buffer.from(JSON.stringify({ app: 'obsidian-plugin', nonce: 'nonce' }))
   .toString('base64url');
+
+test('OAuth state accepts base64url and rejects legacy standard base64', () => {
+  const payload = JSON.stringify({ app: 'obsidian-plugin', nonce: '^,<%?>&)' });
+
+  assert.deepEqual(parseState(Buffer.from(payload).toString('base64url')), {
+    app: 'obsidian-plugin',
+    nonce: '^,<%?>&)',
+  });
+  assert.equal(parseState(Buffer.from(payload).toString('base64')), null);
+});
 
 function jsonResponse(value, status = 200) {
   return new Response(JSON.stringify(value), {
@@ -161,6 +172,15 @@ test('static callback rejects malformed state without throwing', async () => {
     assert.equal(result.location.href, 'unchanged');
     assert.match(result.content.textContent, /Invalid state/);
   }
+});
+
+test('static callback rejects legacy standard-base64 state', async () => {
+  const payload = JSON.stringify({ app: 'obsidian-plugin', nonce: '^,<%?>&)' });
+  const legacyState = Buffer.from(payload).toString('base64');
+  const result = await runStaticCallback(`?code=C&state=${encodeURIComponent(legacyState)}`);
+
+  assert.equal(result.location.href, 'unchanged');
+  assert.match(result.content.textContent, /Invalid state/);
 });
 
 test('static callback uses the fixed Obsidian target for any valid app state', async () => {
