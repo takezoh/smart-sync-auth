@@ -17,7 +17,9 @@ const env = {
   PCLOUD_CLIENT_ID: 'pcloud-client',
   PCLOUD_CLIENT_SECRET: 'pcloud-secret',
 };
-const state = Buffer.from(JSON.stringify({ app: 'obsidian-plugin', nonce: 'nonce' }))
+const state = Buffer.from(JSON.stringify({ nonce: 'nonce' }))
+  .toString('base64url');
+const legacyState = Buffer.from(JSON.stringify({ app: 'obsidian-plugin', nonce: 'nonce' }))
   .toString('base64url');
 
 function jsonResponse(value, status = 200) {
@@ -73,19 +75,27 @@ test('Google callback preserves valid refresh, picker ids, and raw state', async
   assert.match(text, new RegExp(`state=${state}`));
 });
 
-test('Google callback uses the fixed Obsidian target for any valid app state', async () => {
-  const arbitraryAppState = Buffer.from(JSON.stringify({ app: 'another-client', nonce: 'nonce' }))
-    .toString('base64url');
+test('Google callback accepts state without an app parameter', async () => {
   globalThis.fetch = async () => jsonResponse({ access_token: 'AT', expires_in: 3600 });
 
   const response = await handleCallback(new Request(
-    `https://relay/google/callback?code=C&state=${arbitraryAppState}`,
+    `https://relay/google/callback?code=C&state=${state}`,
   ), env);
 
   assert.equal(response.status, 200);
   const text = await response.text();
   assert.match(text, /obsidian:\/\/air-sync-auth/);
   assert.match(text, /Redirecting to Obsidian/);
+});
+
+test('Google callback keeps accepting legacy state with an app parameter', async () => {
+  globalThis.fetch = async () => jsonResponse({ access_token: 'AT', expires_in: 3600 });
+
+  const response = await handleCallback(new Request(
+    `https://relay/google/callback?code=C&state=${legacyState}`,
+  ), env);
+
+  assert.equal(response.status, 200);
 });
 
 test('worker denial wins over success parameters and ignores provider descriptions', async () => {
@@ -163,13 +173,17 @@ test('static callback rejects malformed state without throwing', async () => {
   }
 });
 
-test('static callback uses the fixed Obsidian target for any valid app state', async () => {
-  const arbitraryAppState = Buffer.from(JSON.stringify({ app: '__proto__', nonce: 'n' }))
-    .toString('base64url');
-  const result = await runStaticCallback(`?code=C&state=${arbitraryAppState}`);
+test('static callback accepts state without an app parameter', async () => {
+  const result = await runStaticCallback(`?code=C&state=${state}`);
 
   assert.match(result.location.href, /^obsidian:\/\/air-sync-auth\?/);
   assert.match(result.content.innerHTML, /Redirecting to Obsidian/);
+});
+
+test('static callback keeps accepting legacy state with an app parameter', async () => {
+  const result = await runStaticCallback(`?code=C&state=${legacyState}`);
+
+  assert.match(result.location.href, /^obsidian:\/\/air-sync-auth\?/);
 });
 
 test('static denial has worker-equivalent text and valid state forwards exactly', async () => {

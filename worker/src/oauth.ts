@@ -39,7 +39,6 @@ function parseTokenResponse(value: unknown): TokenResponse | null {
 }
 
 interface StatePayload {
-  app: string;
   nonce: string;
 }
 
@@ -50,7 +49,7 @@ export function htmlResponse(body: string, status = 200): Response {
   });
 }
 
-function decodeState(raw: string): { app?: unknown; nonce?: unknown } {
+function decodeState(raw: string): { nonce?: unknown } {
   const b64 = raw.replace(/-/g, '+').replace(/_/g, '/');
   const padded = b64 + '='.repeat((4 - (b64.length % 4)) % 4);
   return JSON.parse(atob(padded));
@@ -59,7 +58,7 @@ function decodeState(raw: string): { app?: unknown; nonce?: unknown } {
 export function parseState(raw: string): StatePayload | null {
   try {
     const json = decodeState(raw);
-    if (typeof json.app === 'string' && typeof json.nonce === 'string') {
+    if (typeof json.nonce === 'string') {
       return json as StatePayload;
     }
   } catch {
