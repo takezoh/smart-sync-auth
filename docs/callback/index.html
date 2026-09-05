@@ -53,12 +53,7 @@
 
     <script>
       (function () {
-        var ALLOWED_APPS = {
-          "obsidian-plugin": {
-            redirectBase: "obsidian://air-sync-auth",
-            displayName: "Obsidian",
-          },
-        };
+        var REDIRECT_BASE = "obsidian://air-sync-auth";
 
         var params = new URLSearchParams(window.location.search);
         var code = params.get("code");
@@ -109,12 +104,6 @@
           return;
         }
 
-        if (!Object.prototype.hasOwnProperty.call(ALLOWED_APPS, state.app)) {
-          showError("Unknown app.");
-          return;
-        }
-        var appConfig = ALLOWED_APPS[state.app];
-
         if (authorizationError) {
           showError(projectAuthorizationError(authorizationError));
           return;
@@ -127,7 +116,7 @@
         }
 
         var redirectUri =
-          appConfig.redirectBase +
+          REDIRECT_BASE +
           "?code=" +
           encodeURIComponent(code) +
           "&state=" +
@@ -135,14 +124,14 @@
 
         content.innerHTML =
           '<p class="message">Redirecting to ' +
-          appConfig.displayName +
+          "Obsidian" +
           "…</p>" +
           '<div class="fallback">' +
           "<p>If it doesn't open automatically, click the button below.</p>" +
           '<a href="' +
           redirectUri +
           '">Open ' +
-          appConfig.displayName +
+          "Obsidian" +
           "</a>" +
           "</div>";
 

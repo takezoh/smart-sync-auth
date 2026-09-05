@@ -23,8 +23,7 @@ const baseStyle = `
   .fallback { margin-top: 32px; font-size: 0.85rem; color: #666; }
 `;
 
-export function redirectPage(callbackUri: string, appName: string): string {
-  const safeAppName = escapeHtml(appName);
+export function redirectPage(callbackUri: string): string {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -36,10 +35,10 @@ export function redirectPage(callbackUri: string, appName: string): string {
 </head>
 <body>
   <h1>Air Sync</h1>
-  <p class="message">Redirecting to ${safeAppName}&hellip;</p>
+  <p class="message">Redirecting to Obsidian&hellip;</p>
   <div class="fallback">
     <p>If it doesn't open automatically, click the button below.</p>
-    <a href="${escapeHtml(callbackUri)}">Open ${safeAppName}</a>
+    <a href="${escapeHtml(callbackUri)}">Open Obsidian</a>
   </div>
   <script>window.location.href = ${JSON.stringify(callbackUri)};</script>
 </body>

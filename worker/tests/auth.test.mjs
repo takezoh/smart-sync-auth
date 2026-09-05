@@ -73,6 +73,21 @@ test('Google callback preserves valid refresh, picker ids, and raw state', async
   assert.match(text, new RegExp(`state=${state}`));
 });
 
+test('Google callback uses the fixed Obsidian target for any valid app state', async () => {
+  const arbitraryAppState = Buffer.from(JSON.stringify({ app: 'another-client', nonce: 'nonce' }))
+    .toString('base64url');
+  globalThis.fetch = async () => jsonResponse({ access_token: 'AT', expires_in: 3600 });
+
+  const response = await handleCallback(new Request(
+    `https://relay/google/callback?code=C&state=${arbitraryAppState}`,
+  ), env);
+
+  assert.equal(response.status, 200);
+  const text = await response.text();
+  assert.match(text, /obsidian:\/\/air-sync-auth/);
+  assert.match(text, /Redirecting to Obsidian/);
+});
+
 test('worker denial wins over success parameters and ignores provider descriptions', async () => {
   let requests = 0;
   globalThis.fetch = async () => { requests += 1; return jsonResponse({}); };
@@ -139,13 +154,22 @@ async function runStaticCallback(search) {
   return { content, location };
 }
 
-test('static callback rejects non-object and prototype app state without throwing', async () => {
-  for (const value of [null, 7, [], { app: '__proto__', nonce: 'n' }, { app: 'obsidian-plugin' }]) {
+test('static callback rejects malformed state without throwing', async () => {
+  for (const value of [null, 7, [], { app: 'obsidian-plugin' }]) {
     const encoded = Buffer.from(JSON.stringify(value)).toString('base64url');
     const result = await runStaticCallback(`?code=C&state=${encoded}`);
     assert.equal(result.location.href, 'unchanged');
-    assert.match(result.content.textContent, /Invalid state|Unknown app/);
+    assert.match(result.content.textContent, /Invalid state/);
   }
+});
+
+test('static callback uses the fixed Obsidian target for any valid app state', async () => {
+  const arbitraryAppState = Buffer.from(JSON.stringify({ app: '__proto__', nonce: 'n' }))
+    .toString('base64url');
+  const result = await runStaticCallback(`?code=C&state=${arbitraryAppState}`);
+
+  assert.match(result.location.href, /^obsidian:\/\/air-sync-auth\?/);
+  assert.match(result.content.innerHTML, /Redirecting to Obsidian/);
 });
 
 test('static denial has worker-equivalent text and valid state forwards exactly', async () => {

@@ -1,6 +1,6 @@
 import { Env } from './types';
 import { redirectPage, errorPage } from './html';
-import { ALLOWED_APPS, parseState, htmlResponse, projectAuthorizationError } from './oauth';
+import { REDIRECT_BASE, parseState, htmlResponse, projectAuthorizationError } from './oauth';
 
 /**
  * pCloud regional API hosts. The authorize redirect tells us which one to use
@@ -46,11 +46,6 @@ export async function handlePCloudCallback(request: Request, env: Env): Promise<
   if (!state) {
     return htmlResponse(errorPage('Invalid state parameter.'), 400);
   }
-
-  if (!Object.prototype.hasOwnProperty.call(ALLOWED_APPS, state.app)) {
-    return htmlResponse(errorPage('Unknown app.'), 400);
-  }
-  const appConfig = ALLOWED_APPS[state.app]!;
 
   if (authorizationError) {
     return htmlResponse(errorPage(projectAuthorizationError(authorizationError).message), 400);
@@ -102,7 +97,7 @@ export async function handlePCloudCallback(request: Request, env: Env): Promise<
     hostname,
     state: stateRaw,
   });
-  const callbackUri = `${appConfig.redirectBase}?${callbackParams.toString()}`;
+  const callbackUri = `${REDIRECT_BASE}?${callbackParams.toString()}`;
 
-  return htmlResponse(redirectPage(callbackUri, appConfig.displayName));
+  return htmlResponse(redirectPage(callbackUri));
 }

@@ -3,17 +3,7 @@ import { redirectPage, errorPage } from './html';
 
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 
-export interface AppConfig {
-  redirectBase: string;
-  displayName: string;
-}
-
-export const ALLOWED_APPS: Record<string, AppConfig> = {
-  'obsidian-plugin': {
-    redirectBase: 'obsidian://air-sync-auth',
-    displayName: 'Obsidian',
-  },
-};
+export const REDIRECT_BASE = 'obsidian://air-sync-auth';
 
 interface TokenResponse {
   access_token: string;
@@ -98,11 +88,6 @@ export async function handleCallback(request: Request, env: Env): Promise<Respon
     return htmlResponse(errorPage('Invalid state parameter.'), 400);
   }
 
-  if (!Object.prototype.hasOwnProperty.call(ALLOWED_APPS, state.app)) {
-    return htmlResponse(errorPage('Unknown app.'), 400);
-  }
-  const appConfig = ALLOWED_APPS[state.app]!;
-
   if (authorizationError) {
     return htmlResponse(errorPage(projectAuthorizationError(authorizationError).message), 400);
   }
@@ -156,9 +141,9 @@ export async function handleCallback(request: Request, env: Env): Promise<Respon
     callbackParams.set('picked_file_ids', pickedFileIds);
   }
 
-  const callbackUri = `${appConfig.redirectBase}?${callbackParams.toString()}`;
+  const callbackUri = `${REDIRECT_BASE}?${callbackParams.toString()}`;
 
-  return htmlResponse(redirectPage(callbackUri, appConfig.displayName));
+  return htmlResponse(redirectPage(callbackUri));
 }
 
 export async function handleTokenRefresh(request: Request, env: Env): Promise<Response> {
