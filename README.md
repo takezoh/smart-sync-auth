@@ -51,7 +51,11 @@ When a custom OAuth user completes Google sign-in, Google redirects to this page
 
 Unlike the built-in flow (`/google/callback` on the Worker), no server-side token exchange happens — the authorization code is passed through as-is.
 
-**Dropbox reuses this same page — no Worker route.** Dropbox auth is in-plugin Authorization Code + PKCE, so its callback returns `?code=...&state=...` exactly like custom Google OAuth. The plugin generates the relay-compatible state, Dropbox redirects here, and this page bounces it to `obsidian://air-sync-auth`, where the plugin exchanges the code for tokens directly with Dropbox (the `code_verifier` is the proof — no client secret, no `/dropbox/callback` Worker route). In short: the Worker is the **confidential** path (server-held secret, needed only by built-in Google); `docs/callback/` is the **no-secret** path, shared by custom Google (PKCE) and Dropbox (PKCE).
+Dropbox and OneDrive also use in-plugin Authorization Code + PKCE, but their registered
+redirect URI is the `obsidian://air-sync-auth` deep link itself; current versions do
+not route those callbacks through this page or through the Worker. In short: the Worker
+is the **confidential** path for built-in Google, while `docs/callback/` is the hosted
+no-secret bridge for custom Google OAuth.
 
 ## `docs/dropbox-folder/`
 
@@ -77,7 +81,8 @@ The worker has its own toolchain (Wrangler). Work on it from `worker/`:
 cd worker
 npm install
 npm run dev      # wrangler dev
-npx tsc -noEmit  # type-check
+npm test         # production-handler and static-callback tests
+npm run typecheck
 ```
 
 ## License

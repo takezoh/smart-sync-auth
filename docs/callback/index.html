@@ -63,15 +63,25 @@
         var params = new URLSearchParams(window.location.search);
         var code = params.get("code");
         var stateRaw = params.get("state");
+        var authorizationError = params.get("error");
         var content = document.getElementById("content");
 
         function showError(msg) {
-          content.innerHTML = '<p class="message error">' + msg + "</p>";
+          content.textContent = msg;
+          content.className = "message error";
         }
 
-        if (!code || !stateRaw) {
+        function projectAuthorizationError(error) {
+          if (error === "access_denied") return "Authorization was denied.";
+          var code = /^[A-Za-z0-9._~-]{1,64}$/.test(error)
+            ? error
+            : "invalid_error";
+          return "Authorization failed (" + code + ").";
+        }
+
+        if (!stateRaw) {
           showError(
-            "Missing authentication parameters.<br>Please try signing in again from Obsidian.",
+            "Missing authentication parameters. Please try signing in again from Obsidian.",
           );
           return;
         }
@@ -88,9 +98,31 @@
           return;
         }
 
-        var appConfig = ALLOWED_APPS[state.app];
-        if (!appConfig) {
+        if (
+          !state ||
+          typeof state !== "object" ||
+          Array.isArray(state) ||
+          typeof state.app !== "string" ||
+          typeof state.nonce !== "string"
+        ) {
+          showError("Invalid state parameter.");
+          return;
+        }
+
+        if (!Object.prototype.hasOwnProperty.call(ALLOWED_APPS, state.app)) {
           showError("Unknown app.");
+          return;
+        }
+        var appConfig = ALLOWED_APPS[state.app];
+
+        if (authorizationError) {
+          showError(projectAuthorizationError(authorizationError));
+          return;
+        }
+        if (!code) {
+          showError(
+            "Missing authentication parameters. Please try signing in again from Obsidian.",
+          );
           return;
         }
 

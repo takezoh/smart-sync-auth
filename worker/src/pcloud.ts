@@ -1,6 +1,6 @@
 import { Env } from './types';
 import { redirectPage, errorPage } from './html';
-import { ALLOWED_APPS, parseState, htmlResponse } from './oauth';
+import { ALLOWED_APPS, parseState, htmlResponse, projectAuthorizationError } from './oauth';
 
 /**
  * pCloud regional API hosts. The authorize redirect tells us which one to use
@@ -33,8 +33,9 @@ export async function handlePCloudCallback(request: Request, env: Env): Promise<
   const code = url.searchParams.get('code');
   const stateRaw = url.searchParams.get('state');
   const hostname = url.searchParams.get('hostname') ?? 'api.pcloud.com';
+  const authorizationError = url.searchParams.get('error');
 
-  if (!code || !stateRaw) {
+  if (!stateRaw) {
     return htmlResponse(errorPage('Missing authentication parameters.'), 400);
   }
   if (!PCLOUD_HOSTS.has(hostname)) {
@@ -46,9 +47,16 @@ export async function handlePCloudCallback(request: Request, env: Env): Promise<
     return htmlResponse(errorPage('Invalid state parameter.'), 400);
   }
 
-  const appConfig = ALLOWED_APPS[state.app];
-  if (!appConfig) {
+  if (!Object.prototype.hasOwnProperty.call(ALLOWED_APPS, state.app)) {
     return htmlResponse(errorPage('Unknown app.'), 400);
+  }
+  const appConfig = ALLOWED_APPS[state.app]!;
+
+  if (authorizationError) {
+    return htmlResponse(errorPage(projectAuthorizationError(authorizationError).message), 400);
+  }
+  if (!code) {
+    return htmlResponse(errorPage('Missing authentication parameters.'), 400);
   }
 
   const tokenParams = new URLSearchParams({
@@ -69,9 +77,24 @@ export async function handlePCloudCallback(request: Request, env: Env): Promise<
   }
 
   // pCloud returns HTTP 200 with result != 0 on logical errors.
-  const tokens = (await tokenRes.json()) as PCloudTokenResponse;
-  if (tokens.result !== 0 || !tokens.access_token) {
+  let tokenValue: unknown;
+  try {
+    tokenValue = await tokenRes.json();
+  } catch {
+    return htmlResponse(errorPage('Invalid token response.'), 502);
+  }
+  if (!tokenValue || typeof tokenValue !== 'object' || Array.isArray(tokenValue)) {
+    return htmlResponse(errorPage('Invalid token response.'), 502);
+  }
+  const tokens = tokenValue as PCloudTokenResponse;
+  if (typeof tokens.result !== 'number' || !Number.isFinite(tokens.result)) {
+    return htmlResponse(errorPage('Invalid token response.'), 502);
+  }
+  if (tokens.result !== 0) {
     return htmlResponse(errorPage(`Token exchange failed (${tokens.result})`), 400);
+  }
+  if (typeof tokens.access_token !== 'string' || !tokens.access_token) {
+    return htmlResponse(errorPage('Invalid token response.'), 502);
   }
 
   const callbackParams = new URLSearchParams({

@@ -2,4 +2,5 @@
 .dev.vars
 node_modules/
 dist/
+.test-dist/
 .wrangler/
