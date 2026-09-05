@@ -19,7 +19,33 @@ interface TokenResponse {
   access_token: string;
   refresh_token?: string;
   expires_in: number;
-  token_type: string;
+}
+
+const SAFE_ERROR_CODE = /^[A-Za-z0-9._~-]{1,64}$/;
+
+export function projectAuthorizationError(error: string): { code: string; message: string } {
+  if (error === 'access_denied') {
+    return { code: error, message: 'Authorization was denied.' };
+  }
+  const code = SAFE_ERROR_CODE.test(error) ? error : 'invalid_error';
+  return { code, message: `Authorization failed (${code}).` };
+}
+
+function parseTokenResponse(value: unknown): TokenResponse | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const token = value as Record<string, unknown>;
+  if (
+    typeof token.access_token !== 'string' || !token.access_token ||
+    typeof token.expires_in !== 'number' || !Number.isFinite(token.expires_in) || token.expires_in <= 0 ||
+    (token.refresh_token !== undefined && typeof token.refresh_token !== 'string')
+  ) {
+    return null;
+  }
+  return {
+    access_token: token.access_token,
+    expires_in: token.expires_in,
+    ...(typeof token.refresh_token === 'string' ? { refresh_token: token.refresh_token } : {}),
+  };
 }
 
 interface StatePayload {
@@ -61,8 +87,9 @@ export async function handleCallback(request: Request, env: Env): Promise<Respon
   const code = url.searchParams.get('code');
   const stateRaw = url.searchParams.get('state');
   const pickedFileIds = url.searchParams.get('picked_file_ids');
+  const authorizationError = url.searchParams.get('error');
 
-  if (!code || !stateRaw) {
+  if (!stateRaw) {
     return htmlResponse(errorPage('Missing authentication parameters.'), 400);
   }
 
@@ -71,9 +98,16 @@ export async function handleCallback(request: Request, env: Env): Promise<Respon
     return htmlResponse(errorPage('Invalid state parameter.'), 400);
   }
 
-  const appConfig = ALLOWED_APPS[state.app];
-  if (!appConfig) {
+  if (!Object.prototype.hasOwnProperty.call(ALLOWED_APPS, state.app)) {
     return htmlResponse(errorPage('Unknown app.'), 400);
+  }
+  const appConfig = ALLOWED_APPS[state.app]!;
+
+  if (authorizationError) {
+    return htmlResponse(errorPage(projectAuthorizationError(authorizationError).message), 400);
+  }
+  if (!code) {
+    return htmlResponse(errorPage('Missing authentication parameters.'), 400);
   }
 
   const tokenParams = new URLSearchParams({
@@ -99,7 +133,16 @@ export async function handleCallback(request: Request, env: Env): Promise<Respon
     return htmlResponse(errorPage(detail), tokenRes.status >= 500 ? 502 : 400);
   }
 
-  const tokens: TokenResponse = await tokenRes.json();
+  let tokenValue: unknown;
+  try {
+    tokenValue = await tokenRes.json();
+  } catch {
+    return htmlResponse(errorPage('Invalid token response.'), 502);
+  }
+  const tokens = parseTokenResponse(tokenValue);
+  if (!tokens) {
+    return htmlResponse(errorPage('Invalid token response.'), 502);
+  }
 
   const callbackParams = new URLSearchParams({
     access_token: tokens.access_token,
@@ -152,7 +195,16 @@ export async function handleTokenRefresh(request: Request, env: Env): Promise<Re
     });
   }
 
-  const tokens: TokenResponse = await tokenRes.json();
+  let tokenValue: unknown;
+  try {
+    tokenValue = await tokenRes.json();
+  } catch {
+    return Response.json({ error: 'invalid_token_response' }, { status: 502 });
+  }
+  const tokens = parseTokenResponse(tokenValue);
+  if (!tokens) {
+    return Response.json({ error: 'invalid_token_response' }, { status: 502 });
+  }
 
   const result: Record<string, unknown> = {
     access_token: tokens.access_token,
