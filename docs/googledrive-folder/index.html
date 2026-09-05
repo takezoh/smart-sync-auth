@@ -13,9 +13,9 @@
       folder, and we bounce the result to obsidian://air-sync-folder — like
       ../callback/, but on its own scheme (folder pick is not an auth flow).
 
-      Unlike the Dropbox Chooser, the Google Picker needs an OAuth access token to
-      render the user's Drive. The plugin passes its current drive.file token in the
-      URL FRAGMENT (#token=…) — the fragment is never sent to this host and is
+      The Google Picker needs an OAuth access token to render the user's Drive. The
+      plugin passes its current drive.file token in the URL FRAGMENT (#token=…) —
+      the fragment is never sent to this host and is
       scrubbed from history immediately on load. We never put the token in the query
       and never forward it in the obsidian:// redirect (only id/name/state go back).
       The plugin also passes the (public, referrer-restricted) Picker API key as

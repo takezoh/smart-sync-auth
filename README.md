@@ -57,20 +57,11 @@ not route those callbacks through this page or through the Worker. In short: the
 is the **confidential** path for built-in Google, while `docs/callback/` is the hosted
 no-secret bridge for custom Google OAuth.
 
-## `docs/dropbox-folder/`
-
-Hosts the **Dropbox Chooser** so the user can pick which remote folder a vault syncs into. The plugin can't load the remote `dropins.js` inside Obsidian (remote code is disallowed, and the Chooser validates the page origin), so it opens this page in the browser — the same indirection as auth. The page loads the Chooser, the user picks a folder, and it bounces the result to `obsidian://air-sync-folder?id=…&name=…&state=…` (a backend-agnostic scheme, kept separate from `air-sync-auth`), which the plugin routes to the active backend to bind.
-
-Two App-Folder caveats the plugin handles, because the Chooser **always browses the whole Dropbox and can't be limited to the app folder**:
-
-- Air Sync uses App Folder scope, so its token can only address ids under `/Apps/Air Sync/`. The plugin verifies the picked id with `get_metadata` and rejects anything outside the app folder with a clear message rather than silently failing to sync.
-- This page's domain must be added to the **Chooser domain allowlist** in the Dropbox App Console (and the Chooser/Drop-ins capability enabled), or the Chooser renders "App is misconfigured". The app key is **not** baked into `index.html`: the plugin passes it as `?appKey=…` and the page hands it to `Dropbox.init()`, so the plugin is the single source of truth and this page needs no pre-deploy substitution. (The key is a public, non-secret value; the Chooser is gated by the domain allowlist, not key secrecy.)
-
 ## Infrastructure
 
 | Domain | Host | Purpose |
 |--------|------|---------|
-| `airsync.takezo.dev` | GitHub Pages | Landing page, privacy policy, terms of service, custom-OAuth callback, Dropbox Chooser |
+| `airsync.takezo.dev` | GitHub Pages | Landing page, privacy policy, terms of service, custom-OAuth callback |
 | `auth-airsync.takezo.dev` | Cloudflare Workers | OAuth token exchange relay |
 
 ## Local development
