@@ -50,9 +50,7 @@ export function htmlResponse(body: string, status = 200): Response {
   });
 }
 
-/** Decode a base64url state into its JSON payload. */
 function decodeState(raw: string): { app?: unknown; nonce?: unknown } {
-  if (!/^[A-Za-z0-9_-]+$/.test(raw)) throw new Error('Invalid base64url');
   const b64 = raw.replace(/-/g, '+').replace(/_/g, '/');
   const padded = b64 + '='.repeat((4 - (b64.length % 4)) % 4);
   return JSON.parse(atob(padded));
